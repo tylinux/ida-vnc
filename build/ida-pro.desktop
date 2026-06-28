@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=IDA Pro 9.4
+Comment=Interactive Disassembler and Decompiler
+Exec=/opt/ida-pro/ida64 %F
+Type=Application
+Terminal=false
+Icon=utilities-terminal
+Categories=Development;ReverseEngineering;
+MimeType=application/x-executable;application/x-sharedlib;application/x-object;
+StartupNotify=true

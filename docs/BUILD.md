@@ -2,64 +2,56 @@
 
 ## Prerequisites
 
-### On Your Development Machine
-- SSH access to a remote Linux x86_64 host (called "Builder" in this guide)
-- `rsync` (macOS built-in)
-- `make` (macOS built-in or via Xcode CLI tools)
+- **Linux x86_64** host (or any Docker host capable of running x86_64 containers)
+- **Docker Engine** installed and running
+- **IDA Pro installer** — the official x86_64 Linux `.run` file (e.g.
+  `ida-pro_94_x64linux.run`)
+- **IDA license** (`ida.hexlic`) — optional but recommended
 
-### On The Builder (Linux x86_64)
-- Docker Engine installed and running
-- User has `docker` group membership (no sudo required)
-- IDA Pro installer placed on the Builder at the project `downloads/` directory
-- IDA license file (`ida.hexlic`) available somewhere on the Builder (optional)
-- Port `8443` (or your `HOST_PORT`) accessible from your browser
+## Quick Start (Local Build)
 
-## Quick Start
+### 1. Prepare The Installer
 
-### 1. Configure Environment
-
-Copy `.env` and edit with your values:
+Place the installer in the project directory:
 
 ```bash
-cd IDA-VNC
-cp .env .env.local   # .env is already gitignored
-# Edit .env or .env.local with your real paths
+cd ida-vnc
+mkdir -p downloads
+cp /path/to/ida-pro_94_x64linux.run downloads/
 ```
 
-Key variables:
+> `downloads/*.run` is gitignored — the installer never enters the repository.
 
-| Variable | Default | What to set |
-|----------|---------|-------------|
-| `BUILDER_HOST` | `Builder` | SSH host alias or IP of your Linux builder |
-| `IDA_INSTALLER` | `downloads/ida-pro_94_x64linux.run` | Path to the installer on the Builder (relative to project root) |
-| `IDA_HEXLIC_HOST_PATH` | `~/ida.hexlic` | Absolute path to your license file on the Builder |
-| `WORKSPACE_HOST_PATH` | `~/IDA-workspace` | Absolute path to persistent workspace on the Builder |
-| `HOST_PORT` | `8443` | Port mapped on the Builder |
-| `VNC_PASSWORD` | `changeme` | **Change this.** |
-
-### 2. Place The Installer
-
-The installer (~627 MB) must be on the Builder before building. Do **not** commit
-it to git — `downloads/*.run` is already gitignored.
+### 2. Build The Image
 
 ```bash
-# On the Builder
-mkdir -p ~/projects/IDA-VNC/downloads
-cp /path/to/your/ida-pro_94_x64linux.run ~/projects/IDA-VNC/downloads/
+docker build -t ida-vnc:9.4 .
 ```
 
-If your installer lives elsewhere on the Builder, set `IDA_INSTALLER` in `.env`
-to the absolute path, e.g.:
+Or with the Makefile:
 
 ```bash
-IDA_INSTALLER=/home/you/Downloads/ida-pro_94_x64linux.run
+make build
 ```
 
-### 3. Build & Deploy
+### 3. Run The Container
 
 ```bash
-make all    # sync + build
-make run    # start container
+mkdir -p ~/IDA-workspace
+
+docker run -d \
+  --name ida-vnc \
+  -p 8443:6901 \
+  -e VNC_PW=changeme \
+  -v ~/IDA-workspace:/home/kasm-user/workspace \
+  -v ~/ida.hexlic:/home/kasm-user/.idapro/ida.hexlic:ro \
+  ida-vnc:9.4
+```
+
+Or with the Makefile:
+
+```bash
+make run
 ```
 
 ### 4. Access IDA Pro
@@ -67,61 +59,130 @@ make run    # start container
 Open your browser:
 
 ```
-https://<builder-ip>:8443
+https://localhost:8443
 ```
 
 - Accept the self-signed certificate warning.
 - Enter the VNC username: **`kasm_user`**
-- Enter the VNC password: whatever you set in `VNC_PASSWORD` (default: `changeme`)
+- Enter the VNC password: `changeme` (or whatever you set via `-e VNC_PW=`)
 - You should see the XFCE desktop. Click the **IDA Pro 9.4** icon on the desktop
   or open it from the Applications menu.
 
-### 5. Transfer Files To Analyze
-
-**Option A — Pre-mount at startup**
-
-Place files in the directory you set as `WORKSPACE_HOST_PATH` on the Builder
-before running `make run`. They will be available inside the container at
-`~/workspace`.
-
-**Option B — After startup — via Docker cp**
+### 5. Stop & Cleanup
 
 ```bash
-ssh <builder-host>
-docker cp ./sample.bin ida-vnc:/home/kasm-user/workspace/
+# Stop and remove container
+docker stop ida-vnc && docker rm ida-vnc
+
+# Remove image
+docker rmi ida-vnc:9.4
+
+# Deep cleanup
+docker system prune -f
 ```
 
-**Option C — After startup — via Kasm file upload**
-
-Use the KasmVNC sidebar (left edge of browser) → Files → Upload.
-
-### 6. Stop & Cleanup
+Or with the Makefile:
 
 ```bash
-make stop     # stop and remove container
-make clean    # remove image
-make prune    # deep cleanup (containers, images, volumes)
+make stop
+make clean
+make prune
 ```
+
+## Using Docker Compose
+
+```bash
+# Set variables inline or via .env file
+export HOST_PORT=8443
+export VNC_PASSWORD=changeme
+export WORKSPACE_HOST_PATH=$HOME/IDA-workspace
+export IDA_HEXLIC_HOST_PATH=$HOME/ida.hexlic
+
+docker compose up -d
+```
+
+## Using The Makefile (Optional)
+
+| Target | Description |
+|--------|-------------|
+| `make build` | Build Docker image locally |
+| `make run` | Start container locally |
+| `make stop` | Stop and remove container |
+| `make restart` | `stop` + `run` |
+| `make shell` | Bash into running container |
+| `make logs` | Tail container logs |
+| `make clean` | Remove Docker image |
+| `make prune` | Deep cleanup (image + volumes) |
+| `make help` | Show all targets |
+
+Override defaults via `.env` or environment variables:
+
+```bash
+export VNC_PASSWORD=MySecurePassword
+export HOST_PORT=8443
+export IDA_HEXLIC_HOST_PATH=$HOME/ida.hexlic
+export WORKSPACE_HOST_PATH=$HOME/IDA-workspace
+export IDA_INSTALLER=downloads/ida-pro_94_x64linux.run
+make run
+```
+
+## Advanced: Remote Build (Non-x86_64 Dev Machine)
+
+If your development machine is **not** x86_64 (e.g. macOS on Apple Silicon), you
+can still build and run the image on a remote Linux x86_64 builder.
+
+### Setup
+
+1. Configure SSH access to your builder (e.g. `Host builder` in `~/.ssh/config`)
+2. On the builder, create the project directory and place the installer there:
+   ```bash
+   ssh builder
+   mkdir -p ~/projects/ida-vnc/downloads
+   cp /path/to/ida-pro_94_x64linux.run ~/projects/ida-vnc/downloads/
+   ```
+3. On your dev machine, create a `.env` file with builder-specific paths:
+   ```bash
+   # .env (gitignored)
+   BUILDER_HOST=builder
+   BUILDER_PATH=~/projects/ida-vnc
+   VNC_PASSWORD=changeme
+   HOST_PORT=8443
+   IDA_HEXLIC_HOST_PATH=/home/you/ida.hexlic
+   WORKSPACE_HOST_PATH=/home/you/IDA-workspace
+   ```
+
+### Build & Run (Remote)
+
+Use the provided remote-build script (or write your own with `rsync` + `ssh`):
+
+```bash
+# Example: sync code to builder, then build and run remotely
+rsync -avz --exclude='.git' --exclude='.env' \
+  -e ssh . builder:~/projects/ida-vnc/
+
+ssh builder 'cd ~/projects/ida-vnc && docker build -t ida-vnc:9.4 .'
+ssh builder 'cd ~/projects/ida-vnc && docker run -d ...'
+```
+
+> **Note:** The main Makefile is designed for local use. For remote builds, you
+> can either run the above commands manually, or create a wrapper script.
 
 ## Advanced: Full Config Persistence
 
-By default, only the `workspace` and `ida.hexlic` are persistent. If you want
-IDA plugins, settings, and history to survive container restarts, change the
-license mount from a single file to a directory:
+By default, only the `workspace` and `ida.hexlic` are persistent. If you want IDA
+plugins, settings, and history to survive container restarts, mount the entire
+`.idapro` directory (writable) instead of a single file:
 
 ```bash
-# On the Builder
+# Create a directory on the host that contains your license
 mkdir -p ~/IDA-config
-# Copy your license there
 cp ~/ida.hexlic ~/IDA-config/ida.hexlic
-```
 
-Then in `.env`, set:
-
-```bash
-IDA_HEXLIC_HOST_PATH=/home/you/IDA-config
-# (remove the :ro suffix in the run command or use compose if you want
-# the container to write back to the host)
+# Mount the directory (remove :ro to allow writes)
+docker run -d \
+  ... \
+  -v ~/IDA-config:/home/kasm-user/.idapro \
+  ida-vnc:9.4
 ```
 
 **Note:** This gives the container write access to the entire `.idapro` directory
@@ -132,37 +193,34 @@ on the host. If you want to keep it read-only, stick with the single-file mount.
 ### Container won't start
 
 ```bash
-make logs
+docker logs ida-vnc
 ```
 
 Check for:
-- Missing license file warning (non-fatal, but IDA will be in trial mode)
+- Missing installer at build time
 - Port conflict (`8443` already in use)
+- License mount is a directory instead of a file
 
 ### "ERROR: IDA installer not found"
 
-Verify the installer exists at the path defined by `IDA_INSTALLER`:
+Verify the installer exists at `downloads/ida-pro_94_x64linux.run`:
 
 ```bash
-# On the Builder
-ls <project-root>/downloads/ida-pro_94_x64linux.run
-# or if you set a custom absolute path:
-ls <your-absolute-path>/ida-pro_94_x64linux.run
+ls -la downloads/ida-pro_94_x64linux.run
 ```
 
 ### Browser shows "Connection refused"
 
-- Builder firewall blocking port `8443` (or your `HOST_PORT`)
-- Container crashed; check `make logs`
-- Wrong IP — use the Builder's IP address, not localhost
+- Container is not running: `docker ps`
+- Wrong port: check `docker ps` for the correct host port mapping
+- Firewall blocking the port
 
 ### Desktop icon missing
 
 Check that `ida-pro.desktop` is in the container:
 
 ```bash
-make shell
-ls -la ~/Desktop/ida-pro.desktop
+docker exec ida-vnc bash -c "ls -la ~/Desktop/ida-pro.desktop"
 ```
 
 ### License not recognized
@@ -170,27 +228,9 @@ ls -la ~/Desktop/ida-pro.desktop
 Verify the mount is a file, not a directory:
 
 ```bash
-make shell
-ls -la ~/.idapro/ida.hexlic
-file ~/.idapro/ida.hexlic
+docker exec ida-vnc bash -c "file ~/.idapro/ida.hexlic"
 ```
 
-If you see `~/.idapro/ida.hexlic: directory`, that means Docker created a
-directory because the host path didn't exist at runtime. Make sure your license
-file exists on the host before starting the container.
-
-## Makefile Reference
-
-| Target | Description |
-|--------|-------------|
-| `make all` | `sync` + `build` |
-| `make sync` | Push code to Builder |
-| `make build` | Build Docker image on Builder |
-| `make run` | Start container on Builder |
-| `make stop` | Stop and remove container |
-| `make restart` | `stop` + `run` |
-| `make shell` | Bash into running container |
-| `make logs` | Tail container logs |
-| `make clean` | Remove image from Builder |
-| `make prune` | Deep cleanup |
-| `make help` | Show all targets |
+If it says `directory`, that means Docker created a directory because the host
+path didn't exist. Delete the host directory and ensure the file exists before
+starting the container.

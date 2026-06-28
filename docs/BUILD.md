@@ -126,47 +126,6 @@ export IDA_INSTALLER=downloads/ida-pro_94_x64linux.run
 make run
 ```
 
-## Advanced: Remote Build (Non-x86_64 Dev Machine)
-
-If your development machine is **not** x86_64 (e.g. macOS on Apple Silicon), you
-can still build and run the image on a remote Linux x86_64 builder.
-
-### Setup
-
-1. Configure SSH access to your builder (e.g. `Host builder` in `~/.ssh/config`)
-2. On the builder, create the project directory and place the installer there:
-   ```bash
-   ssh builder
-   mkdir -p ~/projects/ida-vnc/downloads
-   cp /path/to/ida-pro_94_x64linux.run ~/projects/ida-vnc/downloads/
-   ```
-3. On your dev machine, create a `.env` file with builder-specific paths:
-   ```bash
-   # .env (gitignored)
-   BUILDER_HOST=builder
-   BUILDER_PATH=~/projects/ida-vnc
-   VNC_PASSWORD=changeme
-   HOST_PORT=8443
-   IDA_HEXLIC_HOST_PATH=/home/you/ida.hexlic
-   WORKSPACE_HOST_PATH=/home/you/IDA-workspace
-   ```
-
-### Build & Run (Remote)
-
-Use the provided remote-build script (or write your own with `rsync` + `ssh`):
-
-```bash
-# Example: sync code to builder, then build and run remotely
-rsync -avz --exclude='.git' --exclude='.env' \
-  -e ssh . builder:~/projects/ida-vnc/
-
-ssh builder 'cd ~/projects/ida-vnc && docker build -t ida-vnc:9.4 .'
-ssh builder 'cd ~/projects/ida-vnc && docker run -d ...'
-```
-
-> **Note:** The main Makefile is designed for local use. For remote builds, you
-> can either run the above commands manually, or create a wrapper script.
-
 ## Advanced: Full Config Persistence
 
 By default, only the `workspace` and `ida.hexlic` are persistent. If you want IDA

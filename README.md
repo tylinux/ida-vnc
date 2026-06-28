@@ -54,16 +54,11 @@ No local GUI installation, no X11 forwarding, no VNC client — just a browser.
 
 ## Prerequisites
 
-- **Linux x86_64** host (or any host that can run x86_64 Docker containers)
-- **Docker Engine** installed and running
+- **Linux x86_64** host with Docker Engine installed and running
 - **IDA Pro installer** — the official x86_64 Linux `.run` file (e.g.
   `ida-pro_94_x64linux.run`)
 - **IDA license** (`ida.hexlic`) — optional but recommended
 - A modern web browser
-
-> **Note for macOS / ARM users:** If you develop on a non-x86_64 machine, you can
-> still build and run this image on a remote Linux x86_64 builder via SSH. See
-> [docs/BUILD.md](docs/BUILD.md) for advanced remote-build instructions.
 
 ## Quick Start
 
@@ -187,7 +182,7 @@ ida-vnc/
 ├── Makefile                  # Convenience wrapper for local docker commands
 ├── docker-compose.yml        # Alternative: run with Docker Compose
 ├── README.md                 # This file
-├── build/
+├── resources/
 │   ├── custom_startup.sh     # License check + workspace init hook
 │   └── ida-pro.desktop       # XFCE desktop icon + menu entry
 └── docs/
@@ -256,8 +251,10 @@ docker exec ida-vnc bash -c "file ~/.idapro/ida.hexlic"
 
 ## License
 
-This project is a Docker packaging layer. It does **not** include IDA Pro or its
-license. You must provide your own legally obtained IDA Pro installer and
-license file (`ida.hexlic`).
+This project is licensed under the **MIT License**. See [LICENSE](LICENSE) for details.
+
+> **Note:** This repository is a Docker packaging layer. It does **not** include
+> IDA Pro or its license. You must provide your own legally obtained IDA Pro
+> installer and license file (`ida.hexlic`).
 
 KasmVNC and the Kasm Core image are trademarks of Kasm Technologies, Inc.

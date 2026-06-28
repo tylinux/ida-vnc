@@ -28,9 +28,9 @@ RUN chmod +x /tmp/ida.run && \
     chown -R 1000:1000 /opt/ida-pro
 
 # ── Desktop Integration ────────────────────────────────
-COPY --chown=1000:1000 build/ida-pro.desktop \
+COPY --chown=1000:1000 resources/ida-pro.desktop \
      /home/kasm-user/Desktop/ida-pro.desktop
-COPY --chown=1000:1000 build/ida-pro.desktop \
+COPY --chown=1000:1000 resources/ida-pro.desktop \
      /usr/share/applications/ida-pro.desktop
 
 RUN mkdir -p /home/kasm-user/.local/share/applications && \
@@ -44,7 +44,7 @@ ENV QT_QPA_PLATFORM=xcb
 ENV DISPLAY=:1
 
 # ── Startup Hook ──────────────────────────────────────
-COPY --chown=1000:1000 build/custom_startup.sh /dockerstartup/
+COPY --chown=1000:1000 resources/custom_startup.sh /dockerstartup/
 RUN chmod +x /dockerstartup/custom_startup.sh
 
 # ── Ensure workspace and config directories exist ─────

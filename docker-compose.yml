@@ -1,0 +1,22 @@
+version: "3.8"
+
+services:
+  ida-vnc:
+    image: ida-vnc:9.4
+    container_name: ida-vnc
+    hostname: ida-vnc
+    restart: unless-stopped
+
+    ports:
+      - "${HOST_PORT:-8443}:6901"
+
+    environment:
+      - VNC_PW=${VNC_PASSWORD:-changeme}
+      - HOME=/home/kasm-user
+
+    volumes:
+      - ${WORKSPACE_HOST_PATH:-/home/tylinux/IDA-workspace}:/home/kasm-user/workspace
+      - ${IDA_HEXLIC_HOST_PATH:-/home/tylinux/ida.hexlic}:/home/kasm-user/.idapro/ida.hexlic:ro
+
+    # Override default startup to use our custom hook
+    command: ["/dockerstartup/custom_startup.sh"]

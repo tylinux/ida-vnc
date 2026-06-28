@@ -7,6 +7,7 @@ LABEL maintainer="tylinux"
 LABEL description="IDA Pro 9.4 inside KasmVNC-powered XFCE desktop"
 
 # ── Install runtime dependencies for Qt6 / IDA ────────
+USER root
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         libxcb-cursor0 \

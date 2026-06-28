@@ -6,6 +6,15 @@ FROM kasmweb/core-ubuntu-jammy:1.14.0
 LABEL maintainer="tylinux"
 LABEL description="IDA Pro 9.4 inside KasmVNC-powered XFCE desktop"
 
+# ── Install runtime dependencies for Qt6 / IDA ────────
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        libxcb-cursor0 \
+        libxkbcommon-x11-0 \
+        libxcb-keysyms1 \
+        libxcb-util1 && \
+    rm -rf /var/lib/apt/lists/*
+
 # ── Install IDA Pro ───────────────────────────────────
 # Installer must be staged at build/downloads/ before docker build
 USER root

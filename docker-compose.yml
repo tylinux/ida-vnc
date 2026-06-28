@@ -15,8 +15,5 @@ services:
       - HOME=/home/kasm-user
 
     volumes:
-      - ${WORKSPACE_HOST_PATH:-/home/tylinux/IDA-workspace}:/home/kasm-user/workspace
-      - ${IDA_HEXLIC_HOST_PATH:-/home/tylinux/ida.hexlic}:/home/kasm-user/.idapro/ida.hexlic:ro
-
-    # Kasm custom_startup.sh is automatically detected and executed
-    # by the base image's vnc_startup.sh
+      - ${WORKSPACE_HOST_PATH:-~/IDA-workspace}:/home/kasm-user/workspace
+      - ${IDA_HEXLIC_HOST_PATH:-~/ida.hexlic}:/home/kasm-user/.idapro/ida.hexlic:ro

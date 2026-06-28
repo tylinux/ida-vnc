@@ -2,76 +2,100 @@
 
 ## Prerequisites
 
-### On Mac (Development)
-- SSH access to `Builder` (configured in `~/.ssh/config` as `Host Builder`)
+### On Your Development Machine
+- SSH access to a remote Linux x86_64 host (called "Builder" in this guide)
 - `rsync` (macOS built-in)
 - `make` (macOS built-in or via Xcode CLI tools)
 
-### On Builder (Linux x86_64)
+### On The Builder (Linux x86_64)
 - Docker Engine installed and running
 - User has `docker` group membership (no sudo required)
-- IDA Pro installer at `/home/tylinux/Downloads/qbittorrent/ida94b1/ida-pro_94_x64linux.run`
-- IDA license file at `/home/tylinux/ida.hexlic` (or wherever you put it)
-- Port `8443` (or your `HOST_PORT`) accessible from your Mac
+- IDA Pro installer placed on the Builder at the project `downloads/` directory
+- IDA license file (`ida.hexlic`) available somewhere on the Builder (optional)
+- Port `8443` (or your `HOST_PORT`) accessible from your browser
 
 ## Quick Start
 
 ### 1. Configure Environment
 
-Copy `.env` and edit values:
+Copy `.env` and edit with your values:
 
 ```bash
-cp .env .env.local   # or just edit .env directly (it's gitignored)
-# Edit .env to match your Builder setup
+cd IDA-VNC
+cp .env .env.local   # .env is already gitignored
+# Edit .env or .env.local with your real paths
 ```
 
 Key variables:
 
-| Variable | Default | What to change |
-|----------|---------|----------------|
-| `BUILDER_HOST` | `Builder` | SSH host alias or IP |
-| `IDA_INSTALLER_SRC` | `/home/tylinux/.../ida-pro_94_x64linux.run` | Path on Builder |
-| `IDA_HEXLIC_HOST_PATH` | `/home/tylinux/ida.hexlic` | Your license file path on Builder |
-| `WORKSPACE_HOST_PATH` | `/home/tylinux/IDA-workspace` | Where persistent files live on Builder |
-| `HOST_PORT` | `8443` | Port mapped on Builder |
+| Variable | Default | What to set |
+|----------|---------|-------------|
+| `BUILDER_HOST` | `Builder` | SSH host alias or IP of your Linux builder |
+| `IDA_INSTALLER` | `downloads/ida-pro_94_x64linux.run` | Path to the installer on the Builder (relative to project root) |
+| `IDA_HEXLIC_HOST_PATH` | `~/ida.hexlic` | Absolute path to your license file on the Builder |
+| `WORKSPACE_HOST_PATH` | `~/IDA-workspace` | Absolute path to persistent workspace on the Builder |
+| `HOST_PORT` | `8443` | Port mapped on the Builder |
+| `VNC_PASSWORD` | `changeme` | **Change this.** |
 
-### 2. One-Command Build & Deploy
+### 2. Place The Installer
+
+The installer (~627 MB) must be on the Builder before building. Do **not** commit
+it to git — `downloads/*.run` is already gitignored.
+
+```bash
+# On the Builder
+mkdir -p ~/projects/IDA-VNC/downloads
+cp /path/to/your/ida-pro_94_x64linux.run ~/projects/IDA-VNC/downloads/
+```
+
+If your installer lives elsewhere on the Builder, set `IDA_INSTALLER` in `.env`
+to the absolute path, e.g.:
+
+```bash
+IDA_INSTALLER=/home/you/Downloads/ida-pro_94_x64linux.run
+```
+
+### 3. Build & Deploy
 
 ```bash
 make all    # sync + build
 make run    # start container
 ```
 
-### 3. Access IDA Pro
+### 4. Access IDA Pro
 
-Open browser on Mac:
+Open your browser:
 
 ```
-https://<Builder-IP>:8443
+https://<builder-ip>:8443
 ```
 
-Accept the self-signed certificate warning. Enter the VNC password (default: `changeme`, set via `VNC_PASSWORD` in `.env`).
+- Accept the self-signed certificate warning.
+- Enter the VNC username: **`kasm_user`**
+- Enter the VNC password: whatever you set in `VNC_PASSWORD` (default: `changeme`)
+- You should see the XFCE desktop. Click the **IDA Pro 9.4** icon on the desktop
+  or open it from the Applications menu.
 
-You should see the XFCE desktop. Click the **IDA Pro 9.4** icon on the desktop or in the menu.
+### 5. Transfer Files To Analyze
 
-### 4. Transfer Files to Analyze
+**Option A — Pre-mount at startup**
 
-**Option A: Pre-mount at startup**
+Place files in the directory you set as `WORKSPACE_HOST_PATH` on the Builder
+before running `make run`. They will be available inside the container at
+`~/workspace`.
 
-Place files in `~/IDA-workspace` on Builder before `make run`. They're already bind-mounted.
-
-**Option B: After startup — via Docker cp**
+**Option B — After startup — via Docker cp**
 
 ```bash
-ssh Builder
+ssh <builder-host>
 docker cp ./sample.bin ida-vnc:/home/kasm-user/workspace/
 ```
 
-**Option C: After startup — via Kasm file upload**
+**Option C — After startup — via Kasm file upload**
 
 Use the KasmVNC sidebar (left edge of browser) → Files → Upload.
 
-### 5. Stop & Cleanup
+### 6. Stop & Cleanup
 
 ```bash
 make stop     # stop and remove container
@@ -81,10 +105,12 @@ make prune    # deep cleanup (containers, images, volumes)
 
 ## Advanced: Full Config Persistence
 
-By default, only the `workspace` and `ida.hexlic` are persistent. If you want IDA plugins, settings, and history to survive container restarts, change the license mount from a single file to a directory:
+By default, only the `workspace` and `ida.hexlic` are persistent. If you want
+IDA plugins, settings, and history to survive container restarts, change the
+license mount from a single file to a directory:
 
 ```bash
-# On Builder
+# On the Builder
 mkdir -p ~/IDA-config
 # Copy your license there
 cp ~/ida.hexlic ~/IDA-config/ida.hexlic
@@ -93,11 +119,13 @@ cp ~/ida.hexlic ~/IDA-config/ida.hexlic
 Then in `.env`, set:
 
 ```bash
-IDA_HEXLIC_HOST_PATH=/home/tylinux/IDA-config
-# (remove the :ro suffix in the run command or use compose)
+IDA_HEXLIC_HOST_PATH=/home/you/IDA-config
+# (remove the :ro suffix in the run command or use compose if you want
+# the container to write back to the host)
 ```
 
-**Note:** This gives the container write access to the entire `.idapro` directory on the host. If you want to keep it read-only, stick with the single-file mount.
+**Note:** This gives the container write access to the entire `.idapro` directory
+on the host. If you want to keep it read-only, stick with the single-file mount.
 
 ## Troubleshooting
 
@@ -113,16 +141,20 @@ Check for:
 
 ### "ERROR: IDA installer not found"
 
-Verify `IDA_INSTALLER_SRC` in `.env` points to the actual file on Builder:
+Verify the installer exists at the path defined by `IDA_INSTALLER`:
 
 ```bash
-ssh Builder ls -la /home/tylinux/Downloads/qbittorrent/ida94b1/ida-pro_94_x64linux.run
+# On the Builder
+ls <project-root>/downloads/ida-pro_94_x64linux.run
+# or if you set a custom absolute path:
+ls <your-absolute-path>/ida-pro_94_x64linux.run
 ```
 
 ### Browser shows "Connection refused"
 
-- Builder firewall blocking port `8443`
+- Builder firewall blocking port `8443` (or your `HOST_PORT`)
 - Container crashed; check `make logs`
+- Wrong IP — use the Builder's IP address, not localhost
 
 ### Desktop icon missing
 
@@ -135,13 +167,17 @@ ls -la ~/Desktop/ida-pro.desktop
 
 ### License not recognized
 
-Verify the mount:
+Verify the mount is a file, not a directory:
 
 ```bash
 make shell
 ls -la ~/.idapro/ida.hexlic
-cat ~/.idapro/ida.hexlic | head -c 100
+file ~/.idapro/ida.hexlic
 ```
+
+If you see `~/.idapro/ida.hexlic: directory`, that means Docker created a
+directory because the host path didn't exist at runtime. Make sure your license
+file exists on the host before starting the container.
 
 ## Makefile Reference
 

@@ -22,8 +22,6 @@ fi
 # ── Ensure workspace and config directories exist ─────
 mkdir -p /home/kasm-user/workspace
 mkdir -p /home/kasm-user/.idapro
-chown -R 1000:1000 /home/kasm-user/workspace 2>/dev/null || true
-chown -R 1000:1000 /home/kasm-user/.idapro 2>/dev/null || true
 
 # ── Done. Kasm VNC startup will proceed via vnc_startup.sh ──
 # (This script is called by vnc_startup.sh's custom_startup() function)

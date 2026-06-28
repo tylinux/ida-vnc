@@ -48,6 +48,10 @@ ENV DISPLAY=:1
 COPY --chown=1000:1000 build/custom_startup.sh /dockerstartup/
 RUN chmod +x /dockerstartup/custom_startup.sh
 
+# ── Ensure workspace and config directories exist ─────
+RUN mkdir -p /home/kasm-user/.idapro /home/kasm-user/workspace && \
+    chown -R 1000:1000 /home/kasm-user/.idapro /home/kasm-user/workspace
+
 # ── Final State ────────────────────────────────────────
 USER 1000
 WORKDIR /home/kasm-user/workspace

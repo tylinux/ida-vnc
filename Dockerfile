@@ -31,7 +31,7 @@ RUN mkdir -p /home/kasm-user/.local/share/applications && \
 # ── Environment ────────────────────────────────────────
 ENV PATH="/opt/ida-pro:${PATH}"
 ENV QT_QPA_PLATFORM=xcb
-ENV DISPLAY=:1.0
+ENV DISPLAY=:1
 
 # ── Startup Hook ──────────────────────────────────────
 COPY --chown=1000:1000 build/custom_startup.sh /dockerstartup/

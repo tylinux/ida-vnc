@@ -113,6 +113,8 @@ https://localhost:8443
 - You should see the XFCE desktop. Double-click the **IDA Pro 9.4** icon on the
   desktop, or open it from the Applications menu.
 
+![IDA Pro running inside KasmVNC-powered XFCE desktop](assets/screenshot.png)
+
 ### 5. Stop & Cleanup
 
 ```bash
@@ -182,6 +184,8 @@ ida-vnc/
 ├── Makefile                  # Convenience wrapper for local docker commands
 ├── docker-compose.yml        # Alternative: run with Docker Compose
 ├── README.md                 # This file
+├── assets/
+│   └── screenshot.png        # XFCE desktop + IDA Pro screenshot
 ├── resources/
 │   ├── custom_startup.sh     # License check + workspace init hook
 │   └── ida-pro.desktop       # XFCE desktop icon + menu entry

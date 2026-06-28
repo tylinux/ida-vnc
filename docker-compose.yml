@@ -18,5 +18,5 @@ services:
       - ${WORKSPACE_HOST_PATH:-/home/tylinux/IDA-workspace}:/home/kasm-user/workspace
       - ${IDA_HEXLIC_HOST_PATH:-/home/tylinux/ida.hexlic}:/home/kasm-user/.idapro/ida.hexlic:ro
 
-    # Override default startup to use our custom hook
-    command: ["/dockerstartup/custom_startup.sh"]
+    # Kasm custom_startup.sh is automatically detected and executed
+    # by the base image's vnc_startup.sh

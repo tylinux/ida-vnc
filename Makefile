@@ -46,7 +46,6 @@ run:
 			-v $(WORKSPACE_HOST_PATH):/home/kasm-user/workspace \
 			-v $(IDA_HEXLIC_HOST_PATH):/home/kasm-user/.idapro/ida.hexlic:ro \
 			$(BUILDER_IMAGE_TAG) \
-			/dockerstartup/custom_startup.sh \
 			|| echo "Container already running or failed to start. Check with make logs"'
 
 stop:

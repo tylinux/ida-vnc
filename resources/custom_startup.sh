@@ -23,6 +23,9 @@ fi
 mkdir -p /home/kasm-user/workspace
 mkdir -p /home/kasm-user/.idapro
 
+# ── Trust the desktop launcher (XFCE requires +x on desktop files) ──
+chmod +x /home/kasm-user/Desktop/ida-pro.desktop 2>/dev/null || true
+
 # ── Done. Kasm VNC startup will proceed via vnc_startup.sh ──
 # (This script is called by vnc_startup.sh's custom_startup() function)
 

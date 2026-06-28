@@ -30,6 +30,7 @@ RUN chmod +x /tmp/ida.run && \
 # ── Desktop Integration ────────────────────────────────
 COPY --chown=1000:1000 resources/ida-pro.desktop \
      /home/kasm-user/Desktop/ida-pro.desktop
+RUN chmod +x /home/kasm-user/Desktop/ida-pro.desktop
 COPY --chown=1000:1000 resources/ida-pro.desktop \
      /usr/share/applications/ida-pro.desktop
 

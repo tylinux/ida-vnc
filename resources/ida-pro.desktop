@@ -2,6 +2,7 @@
 Name=IDA Pro 9.4
 Comment=Interactive Disassembler and Decompiler
 Exec=/opt/ida-pro/ida %F
+TryExec=/opt/ida-pro/ida
 Type=Application
 Terminal=false
 Icon=utilities-terminal

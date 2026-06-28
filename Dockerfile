@@ -3,7 +3,6 @@
 # ────────────────────────────────────────────────────────
 FROM kasmweb/core-ubuntu-jammy:1.14.0
 
-LABEL maintainer="tylinux"
 LABEL description="IDA Pro 9.4 inside KasmVNC-powered XFCE desktop"
 
 # ── Install runtime dependencies for Qt6 / IDA ────────

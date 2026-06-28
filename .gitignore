@@ -1,0 +1,15 @@
+# Environment
+.env
+
+# IDA installer (not in repo)
+downloads/*.run
+
+# Build artifacts
+*.tar
+*.tar.gz
+
+# Workspace data
+workspace/
+
+# License files
+*.hexlic

@@ -11,6 +11,7 @@ USER root
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         libxcb-cursor0 \
+        libxcb-icccm4 \
         libxkbcommon-x11-0 \
         libxcb-keysyms1 \
         libxcb-util1 && \

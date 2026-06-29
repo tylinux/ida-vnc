@@ -179,17 +179,15 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 
 1. Go to **Actions** → **Build IDA-VNC Docker Image**
 2. Click **Run workflow**
-3. Keep the default tag `9.4` and click **Run workflow**
+3. Keep the default tag `latest` and click **Run workflow**
 
-The workflow will:
-- Download the installer from your secret URL
-- Build the Docker image on GitHub's x86_64 runner
-- Push it to **GitHub Container Registry** (`ghcr.io`)
+The workflow will download the installer from your secret URL, build the Docker
+image on GitHub's x86_64 runner, and push it to **GitHub Container Registry**.
 
 The resulting image will be available at:
 
 ```
-ghcr.io/<your-username>/ida-vnc:9.4
+ghcr.io/<your-username>/ida-vnc:latest
 ```
 
 ### 5. Pull & Run the Built Image
@@ -207,7 +205,7 @@ docker run -d \
   -e VNC_PW=changeme \
   -v ~/IDA-workspace:/home/kasm-user/workspace \
   -v ~/ida.hexlic:/home/kasm-user/.idapro/ida.hexlic:ro \
-  ghcr.io/<your-username>/ida-vnc:9.4
+  ghcr.io/<your-username>/ida-vnc:latest
 ```
 
 > **Note:** Private GHCR images require authentication. For a fully public image,

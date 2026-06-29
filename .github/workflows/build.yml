@@ -1,27 +1,18 @@
 name: Build IDA-VNC Docker Image
 
 on:
-  # Manual trigger — recommended for first-time builds and controlled releases
+  # Manual trigger only — the user must provide a private IDA installer URL,
+  # so we never run automatically on push.
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Docker image tag (e.g. 9.4)'
+        description: 'Docker image tag'
         required: true
-        default: '9.4'
+        default: 'latest'
       push:
         description: 'Push image to GHCR'
         required: true
         default: 'true'
-
-  # Auto-trigger on pushes to main, but only when relevant files change
-  push:
-    branches: [main]
-    paths:
-      - 'Dockerfile'
-      - 'resources/**'
-      - 'Makefile'
-      - 'docker-compose.yml'
-      - '.github/workflows/build.yml'
 
 env:
   REGISTRY: ghcr.io
@@ -91,8 +82,7 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
-            type=raw,value=${{ github.event.inputs.tag || '9.4' }}
-            type=sha,prefix=9.4-
+            type=raw,value=${{ github.event.inputs.tag || 'latest' }}
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
@@ -109,7 +99,7 @@ jobs:
         run: |
           echo ""
           echo "Image pushed to:"
-          echo "  ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.event.inputs.tag || '9.4' }}"
+          echo "  ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.event.inputs.tag || 'latest' }}"
           echo ""
           echo "Pull it with:"
-          echo "  docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.event.inputs.tag || '9.4' }}"
+          echo "  docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.event.inputs.tag || 'latest' }}"

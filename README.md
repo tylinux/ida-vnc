@@ -128,6 +128,92 @@ docker rmi ida-vnc:9.4
 docker system prune -f
 ```
 
+## Build with GitHub Actions
+
+You can also build and publish the image entirely on GitHub Actions — no local
+Linux machine needed. This is useful if you develop on macOS, Windows, or just
+want a reproducible CI build.
+
+### 1. Fork the Repository
+
+Click **Fork** on the GitHub repository page to create a copy under your own
+account.
+
+### 2. Upload Your Installer Somewhere Accessible
+
+GitHub Actions needs to download your legally obtained IDA Pro Linux installer
+(`.run` file). Options:
+
+- A **private S3 bucket** with a pre-signed URL
+- A **private file server** that supports HTTP basic auth
+- A **GitHub Release asset** on a private repository
+- Any HTTPS URL that `curl` can fetch
+
+> ⚠️ **Do not commit the installer.** The workflow downloads it at build time
+> from the URL you provide.
+
+### 3. Add the Download URL as a GitHub Secret
+
+Go to your fork:
+
+```
+Settings → Secrets and variables → Actions → New repository secret
+```
+
+Create a secret named **`IDA_DOWNLOAD_URL`** with the full HTTPS URL to your
+installer, e.g.:
+
+```
+https://your-private-server.example.com/ida-pro_94_x64linux.run
+```
+
+If your URL requires authentication headers (e.g. `Authorization: Bearer ...`),
+create another secret named **`IDA_DOWNLOAD_HEADERS`** with newline-separated
+headers:
+
+```
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+```
+
+### 4. Run the Workflow
+
+1. Go to **Actions** → **Build IDA-VNC Docker Image**
+2. Click **Run workflow**
+3. Keep the default tag `9.4` and click **Run workflow**
+
+The workflow will:
+- Download the installer from your secret URL
+- Build the Docker image on GitHub's x86_64 runner
+- Push it to **GitHub Container Registry** (`ghcr.io`)
+
+The resulting image will be available at:
+
+```
+ghcr.io/<your-username>/ida-vnc:9.4
+```
+
+### 5. Pull & Run the Built Image
+
+On any Linux x86_64 host with Docker:
+
+```bash
+# Log in to GHCR (only needed once per session)
+echo $GITHUB_TOKEN | docker login ghcr.io -u <your-username> --password-stdin
+
+# Pull and run
+docker run -d \
+  --name ida-vnc \
+  -p 8443:6901 \
+  -e VNC_PW=changeme \
+  -v ~/IDA-workspace:/home/kasm-user/workspace \
+  -v ~/ida.hexlic:/home/kasm-user/.idapro/ida.hexlic:ro \
+  ghcr.io/<your-username>/ida-vnc:9.4
+```
+
+> **Note:** Private GHCR images require authentication. For a fully public image,
+> make sure your **package visibility** is set to public after the first push:
+> `https://github.com/users/<you>/packages/container/ida-vnc/settings`
+
 ## Using Docker Compose
 
 If you prefer Compose over raw `docker` commands:
@@ -179,6 +265,9 @@ make run
 ```
 ida-vnc/
 ├── .env.example              # Environment template (copy to .env)
+├── .github/
+│   └── workflows/
+│       └── build.yml         # GitHub Actions CI workflow
 ├── .gitignore
 ├── Dockerfile                # Image definition (Kasm base + IDA + Qt deps)
 ├── Makefile                  # Convenience wrapper for local docker commands

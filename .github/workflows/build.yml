@@ -1,0 +1,115 @@
+name: Build IDA-VNC Docker Image
+
+on:
+  # Manual trigger — recommended for first-time builds and controlled releases
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Docker image tag (e.g. 9.4)'
+        required: true
+        default: '9.4'
+      push:
+        description: 'Push image to GHCR'
+        required: true
+        default: 'true'
+
+  # Auto-trigger on pushes to main, but only when relevant files change
+  push:
+    branches: [main]
+    paths:
+      - 'Dockerfile'
+      - 'resources/**'
+      - 'Makefile'
+      - 'docker-compose.yml'
+      - '.github/workflows/build.yml'
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download IDA Pro installer
+        shell: bash
+        env:
+          IDA_DOWNLOAD_URL: ${{ secrets.IDA_DOWNLOAD_URL }}
+          IDA_DOWNLOAD_HEADERS: ${{ secrets.IDA_DOWNLOAD_HEADERS }}
+        run: |
+          set -e
+
+          if [ -z "$IDA_DOWNLOAD_URL" ]; then
+            echo ""
+            echo "ERROR: IDA_DOWNLOAD_URL secret is not set."
+            echo ""
+            echo "To build this image you must provide a URL to your legally"
+            echo "obtained IDA Pro Linux installer (.run file)."
+            echo ""
+            echo "Set it at:"
+            echo "  Settings -> Secrets and variables -> Actions -> New repository secret"
+            echo ""
+            exit 1
+          fi
+
+          mkdir -p downloads
+          INSTALLER="downloads/ida-pro_94_x64linux.run"
+
+          echo "Downloading IDA Pro installer..."
+          if [ -n "$IDA_DOWNLOAD_HEADERS" ]; then
+            # IDA_DOWNLOAD_HEADERS should be newline-separated "Header: value" pairs
+            curl -fsSL -H "$IDA_DOWNLOAD_HEADERS" -o "$INSTALLER" "$IDA_DOWNLOAD_URL"
+          else
+            curl -fsSL -o "$INSTALLER" "$IDA_DOWNLOAD_URL"
+          fi
+
+          chmod +x "$INSTALLER"
+          echo "Installer downloaded: $(du -h "$INSTALLER" | cut -f1)"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        if: github.event.inputs.push != 'false'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=${{ github.event.inputs.tag || '9.4' }}
+            type=sha,prefix=9.4-
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: ${{ github.event.inputs.push != 'false' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Summary
+        if: github.event.inputs.push != 'false'
+        run: |
+          echo ""
+          echo "Image pushed to:"
+          echo "  ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.event.inputs.tag || '9.4' }}"
+          echo ""
+          echo "Pull it with:"
+          echo "  docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.event.inputs.tag || '9.4' }}"

@@ -22,6 +22,8 @@ No local GUI installation, no X11 forwarding, no VNC client — just a browser.
 - **Full XFCE desktop** in your browser with desktop icons, file manager, terminal
 - **Persistent workspace** (`~/workspace`) mounted from the host
 - **Runtime license mount** — your `ida.hexlic` is never baked into the image
+- **[ida-pro-mcp](https://github.com/mrexodia/ida-pro-mcp)** MCP server auto-started
+  on container port `8745`
 - **One-command build and run** on any Linux x86_64 machine with Docker
 
 ## Architecture
@@ -46,6 +48,7 @@ No local GUI installation, no X11 forwarding, no VNC client — just a browser.
 │  └──────────────────────────┘   │
 │  - license (bind mount, ro)       │
 │  - workspace (bind mount)         │
+│  - ida-pro-mcp (:8745)            │
 └─────────────────────────────────┘
               │
               ▼
@@ -92,6 +95,7 @@ mkdir -p ~/IDA-workspace
 docker run -d \
   --name ida-vnc \
   -p 8443:6901 \
+  -p 8745:8745 \
   -e VNC_PW=changeme \
   -v ~/IDA-workspace:/home/kasm-user/workspace \
   -v ~/ida.hexlic:/home/kasm-user/.idapro/ida.hexlic:ro \
@@ -202,6 +206,7 @@ echo $GITHUB_TOKEN | docker login ghcr.io -u <your-username> --password-stdin
 docker run -d \
   --name ida-vnc \
   -p 8443:6901 \
+  -p 8745:8745 \
   -e VNC_PW=changeme \
   -v ~/IDA-workspace:/home/kasm-user/workspace \
   -v ~/ida.hexlic:/home/kasm-user/.idapro/ida.hexlic:ro \
@@ -255,6 +260,43 @@ export VNC_PASSWORD=MySecurePassword
 export HOST_PORT=8443
 export IDA_HEXLIC_HOST_PATH=$HOME/ida.hexlic
 export WORKSPACE_HOST_PATH=$HOME/IDA-workspace
+make run
+```
+
+## ida-pro-mcp Server
+
+The image ships with [ida-pro-mcp](https://github.com/mrexodia/ida-pro-mcp)
+pre-installed. On container startup, the MCP server is started automatically:
+
+```
+uv run --no-project --python python3.11 idalib-mcp --host 127.0.0.1 --port 8745
+```
+
+- **Container endpoint:** `http://127.0.0.1:8745/mcp`
+- **Default host port mapping:** `8745:8745`
+- **Log file:** `/tmp/idalib-mcp.log`
+
+By default the server binds to `127.0.0.1` inside the container (accessible from
+other processes running in the same container). If you want to expose it to the
+Docker host, set `MCP_HOST=0.0.0.0` when starting the container:
+
+```bash
+docker run -d \
+  --name ida-vnc \
+  -p 8443:6901 \
+  -p 8745:8745 \
+  -e VNC_PW=changeme \
+  -e MCP_HOST=0.0.0.0 \
+  -v ~/IDA-workspace:/home/kasm-user/workspace \
+  -v ~/ida.hexlic:/home/kasm-user/.idapro/ida.hexlic:ro \
+  ida-vnc:9.4
+```
+
+With `Makefile` or Docker Compose, override the default host port via
+`MCP_PORT`:
+
+```bash
+export MCP_PORT=8745
 make run
 ```
 

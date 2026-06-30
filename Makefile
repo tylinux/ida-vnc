@@ -16,6 +16,7 @@
 IMAGE_TAG       ?= ida-vnc:9.4
 CONTAINER_NAME  ?= ida-vnc
 HOST_PORT       ?= 8443
+MCP_PORT        ?= 8745
 VNC_PASSWORD    ?= changeme
 
 # Local paths for runtime mounts (override in .env)
@@ -45,6 +46,7 @@ run:
 		--name $(CONTAINER_NAME) \
 		--hostname ida-vnc \
 		-p $(HOST_PORT):6901 \
+		-p $(MCP_PORT):8745 \
 		-e VNC_PW=$(VNC_PASSWORD) \
 		-e HOME=/home/kasm-user \
 		-v $(WORKSPACE_PATH):/home/kasm-user/workspace \

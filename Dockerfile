@@ -27,6 +27,33 @@ RUN chmod +x /tmp/ida.run && \
     rm -f /tmp/ida.run && \
     chown -R 1000:1000 /opt/ida-pro
 
+# ── Install Python 3.11+ for ida-pro-mcp ──────────────
+# ida-pro-mcp requires Python 3.11 or higher. Ubuntu 22.04 ships 3.10.
+USER root
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends software-properties-common && \
+    add-apt-repository -y ppa:deadsnakes/ppa && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends \
+        python3.11 \
+        python3.11-dev \
+        python3.11-venv \
+        python3.11-distutils && \
+    rm -rf /var/lib/apt/lists/*
+
+# Point IDA Pro / idalib to Python 3.11
+RUN /opt/ida-pro/idapyswitch -s /usr/lib/x86_64-linux-gnu/libpython3.11.so.1.0
+
+# ── Install uv and ida-pro-mcp ────────────────────────
+USER root
+# Use root's HOME so pip/uv don't create root-owned files under /home/kasm-user
+ENV HOME=/root
+RUN python3.11 -m ensurepip && \
+    python3.11 -m pip install --upgrade pip && \
+    python3.11 -m pip install uv && \
+    uv pip install --system --python python3.11 \
+        git+https://github.com/mrexodia/ida-pro-mcp.git
+
 # ── Desktop Integration ────────────────────────────────
 COPY --chown=1000:1000 resources/ida-pro.desktop \
      /home/kasm-user/Desktop/ida-pro.desktop
@@ -56,4 +83,4 @@ RUN mkdir -p /home/kasm-user/.idapro /home/kasm-user/workspace && \
 USER 1000
 WORKDIR /home/kasm-user/workspace
 
-EXPOSE 6901
+EXPOSE 6901 8745

@@ -9,6 +9,7 @@ services:
 
     ports:
       - "${HOST_PORT:-8443}:6901"
+      - "${MCP_PORT:-8745}:8745"
 
     environment:
       - VNC_PW=${VNC_PASSWORD:-changeme}
